@@ -1,128 +1,72 @@
-// lib/services/book_service.dart
-
 import 'dart:async';
+import 'dart:convert';
+import 'package:flutter/services.dart' show rootBundle;
 import '../models/book.dart';
-import 'auth_service.dart'; // Diperlukan untuk mendapatkan ID user
 
 class BookService {
-  // Singleton pattern
-  static final BookService _instance = BookService._internal();
-  factory BookService() => _instance;
-  BookService._internal();
+  final _booksController = StreamController<List<Book>>.broadcast();
+  List<Book> _books = [];
 
-  // Data dummy untuk buku (PANGGIL LANGSUNG FUNGSINYA)
-  final List<Book> _books = getDummyBooks();
-  
-  // StreamController untuk mengemulasi real-time updates
-  final _booksStreamController = StreamController<List<Book>>.broadcast();
-  
-  final AuthService _authService = AuthService();
-
-  // Mendapatkan semua buku secara real-time
-  Stream<List<Book>> getAllBooks() {
-    // Kirim data terbaru ke stream
-    _booksStreamController.add(_books);
-    return _booksStreamController.stream;
+  BookService() {
+    _loadBooks();
   }
 
-  // Mendapatkan buku-buku milik user yang sedang login
-  Stream<List<Book>> getUserBooks() {
-    final userId = _authService.currentUser?.id;
-    if (userId == null) {
-      return Stream.value([]); // Kembalikan stream kosong jika user tidak login
+  Future<void> _loadBooks() async {
+    try {
+      final String jsonString = await rootBundle.loadString('assets/data/dummy_books.json');
+      final List<dynamic> jsonList = json.decode(jsonString);
+      _books = jsonList.map((json) => Book.fromMap(json)).toList();
+      _booksController.add(_books);
+    } catch (e) {
+      print('Error loading books: $e');
+      _booksController.addError('Failed to load books');
     }
-    
-    final userBooks = _books.where((book) => book.ownerId == userId).toList();
-    return Stream.value(userBooks);
   }
 
-  // Menambah buku baru
-  Future<void> addBook(Book book) async {
-    // Generate ID sederhana
-    final id = DateTime.now().millisecondsSinceEpoch.toString();
-    final newBook = book.copyWith(id: id);
-    
-    _books.add(newBook);
-    _booksStreamController.add(_books);
-    
-    // Simulasi delay jaringan
-    return Future.delayed(const Duration(milliseconds: 500));
+  Stream<List<Book>> getAllBooks() => _booksController.stream;
+
+  void addBook(Book book) {
+    _books.add(book);
+    _booksController.add(List.from(_books));
   }
 
-  // Mengupdate buku yang sudah ada
-  Future<void> updateBook(Book book) async {
-    final index = _books.indexWhere((b) => b.id == book.id);
+  void updateBook(Book updatedBook) {
+    final index = _books.indexWhere((book) => book.id == updatedBook.id);
     if (index != -1) {
-      _books[index] = book;
-      _booksStreamController.add(_books);
+      _books[index] = updatedBook;
+      _booksController.add(List.from(_books));
     }
-    
-    // Simulasi delay jaringan
-    return Future.delayed(const Duration(milliseconds: 500));
   }
 
-  // Menghapus buku
-  Future<void> deleteBook(String id) async {
+  void deleteBook(String id) {
     _books.removeWhere((book) => book.id == id);
-    _booksStreamController.add(_books);
-    
-    // Simulasi delay jaringan
-    return Future.delayed(const Duration(milliseconds: 500));
+    _booksController.add(List.from(_books));
   }
 
-  // --- Fungsi Tambahan ---
-
-  // Mencari buku
-  Stream<List<Book>> searchBooks(String query) {
-    if (query.isEmpty) return getAllBooks();
-    
-    final results = _books.where((book) => 
-      book.title.toLowerCase().contains(query.toLowerCase()) ||
-      book.author.toLowerCase().contains(query.toLowerCase())
+  List<Book> searchBooks(String query) {
+    if (query.isEmpty) return _books;
+    return _books.where((book) => 
+        book.title.toLowerCase().contains(query.toLowerCase()) || 
+        book.author.toLowerCase().contains(query.toLowerCase())
     ).toList();
-    
-    return Stream.value(results);
   }
-  
-  // Mendapatkan semua kategori
-  List<String> getAllCategories() {
-    // Ekstrak kategori unik dari data buku
-    final categories = _books.map((book) => book.category).toSet().toList();
-    categories.sort();
-    return ['Semua', ...categories];
+
+  List<Book> filterByCategory(String category) {
+    if (category.toLowerCase() == 'all') return _books;
+    return _books.where((book) => book.category.toLowerCase() == category.toLowerCase()).toList();
   }
-  
-  // Mendapatkan buku berdasarkan kategori
-  Stream<List<Book>> getBooksByCategory(String category) {
-    if (category == 'Semua') {
-      return getAllBooks();
+
+  List<Book> sortBooks(String sortBy) {
+    List<Book> sortedBooks = List.from(_books);
+    if (sortBy == 'title') {
+      sortedBooks.sort((a, b) => a.title.compareTo(b.title));
+    } else if (sortBy == 'rating') {
+      sortedBooks.sort((a, b) => b.rating.compareTo(a.rating));
     }
-    
-    final filteredBooks = _books.where((book) => book.category == category).toList();
-    return Stream.value(filteredBooks);
+    return sortedBooks;
   }
-  
-  // Mengurutkan buku berdasarkan opsi yang dipilih
-  List<Book> sortBooks(List<Book> books, String sortOption) {
-    switch (sortOption) {
-      case 'Judul A-Z':
-        books.sort((a, b) => a.title.compareTo(b.title));
-        break;
-      case 'Rating Tertinggi':
-        books.sort((a, b) => b.rating.compareTo(a.rating));
-        break;
-      case 'Terbaru':
-        books.sort((a, b) => b.publishedDate.compareTo(a.publishedDate));
-        break;
-      default:
-        // Default sorting (tidak ada perubahan)
-        break;
-    }
-    return books;
-  }
-  
-  // Dispose resources
+
   void dispose() {
-    _booksStreamController.close();
+    _booksController.close();
   }
 }

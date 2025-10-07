@@ -147,9 +147,9 @@ class DetailScreen extends StatelessWidget {
                               borderRadius: BorderRadius.circular(10),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.2),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4),
+                                  color: pastelPrimary.withOpacity(0.5),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 6),
                                 ),
                               ],
                               image: DecorationImage(
@@ -182,14 +182,14 @@ class DetailScreen extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: pastelSecondary,
+                              color: Colors.transparent,
                               borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: pastelSecondary, width: 1.5),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.star,
-                                    color: Colors.orange[700], size: 20),
+                                const Icon(Icons.star, color: Colors.amber, size: 20),
                                 const SizedBox(width: 8),
                                 Text(
                                   book.rating.toStringAsFixed(1),
@@ -222,10 +222,26 @@ class DetailScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 15),
                           Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
-                              color: pastelBackground.withOpacity(0.5),
-                              borderRadius: BorderRadius.circular(12),
+                              gradient: LinearGradient(
+                                colors: [
+                                  pastelBackground.withOpacity(0.5),
+                                  Colors.white
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(15),
+                              border: Border.all(
+                                  color: pastelPrimary.withOpacity(0.2)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 5),
+                                )
+                              ],
                             ),
                             child: Column(
                               children: [
@@ -255,6 +271,33 @@ class DetailScreen extends StatelessWidget {
                                         : Icons.cancel,
                                     book.isAvailable ? Colors.green : Colors.red),
                               ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Center(
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                // Aksi untuk membaca buku
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: pastelPrimary,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 30, vertical: 15),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                                elevation: 5,
+                              ),
+                              icon: const Icon(Icons.book_outlined,
+                                  color: Colors.white),
+                              label: const Text(
+                                'Baca Sekarang',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
                             ),
                           ),
                         ],
